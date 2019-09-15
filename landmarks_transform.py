@@ -1,13 +1,15 @@
-'''
+"""
     - Author: Bongsang Kim
     - homepage: https://bongsang.github.io
     - Linkedin: https://www.linkedin.com/in/bongsang
-'''
+"""
+
 import numpy as np
 import cv2
 
 import torch
 from torchvision import transforms, utils
+
 
 class Normalize(object):
     """Convert a color image to grayscale and normalize the color range to [0,1]."""
@@ -89,9 +91,7 @@ class RandomCrop(object):
         top = np.random.randint(0, h - new_h)
         left = np.random.randint(0, w - new_w)
 
-        image_copy = image[top: top + new_h,
-                left: left + new_w]
-
+        image_copy = image[top: top + new_h, left: left + new_w]
         landmarks_copy = landmarks - [left, top]
 
         return {'image': image_copy, 'landmarks': landmarks_copy}
@@ -101,7 +101,7 @@ class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, sample):
-        image, key_pts = sample['image'], sample['landmarks']
+        image, landmarks = sample['image'], sample['landmarks']
 
         # if image has no grayscale color channel, add one
         if len(image.shape) == 2:
@@ -112,6 +112,6 @@ class ToTensor(object):
         # numpy image: H x W x C
         # torch image: C X H X W
         image = image.transpose((2, 0, 1))
+        print(f'LandmarksDataset torch tensor shape, image={image.shape}, landmarks={landmarks.shape}')
 
-        return {'torch_image': torch.from_numpy(image),
-                'landmarks': torch.from_numpy(key_pts)}
+        return {'image': torch.from_numpy(image), 'landmarks': torch.from_numpy(landmarks)}

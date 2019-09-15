@@ -1,8 +1,8 @@
-'''
+"""
     - Author: Bongsang Kim
     - homepage: https://bongsang.github.io
     - Linkedin: https://www.linkedin.com/in/bongsang
-'''
+"""
 import os
 from skimage import io, transform
 
@@ -46,6 +46,7 @@ class LandmarksDataset(Dataset):
         landmarks = np.array([landmarks])
         landmarks = landmarks.astype('float').reshape(-1, 2)
         sample = {'image': image, 'landmarks': landmarks}
+        print(f'LandmarksDataset shape, image={image.shape}, landmarks={landmarks.shape}')
 
         if self.transform:
             sample = self.transform(sample)

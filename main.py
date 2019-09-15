@@ -1,8 +1,8 @@
-'''
+"""
     - Author: Bongsang Kim
     - homepage: https://bongsang.github.io
     - Linkedin: https://www.linkedin.com/in/bongsang
-'''
+"""
 
 import glob
 import os
@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import cv2
 import skimage.io as io
+from torch.utils.data import DataLoader
 from torchvision import transforms, utils
 
 from landmarks_dataset import LandmarksDataset
@@ -57,7 +58,6 @@ def demo_show_landmarks_dataset(landmarks_dataset, idx):
     show_landmarks(sample['image'], sample['landmarks'])
 
 
-
 def demo_show_transformation(landmarks_dataset):
     # test out some of these transforms
     rescale = Rescale(100)
@@ -79,32 +79,71 @@ def demo_show_transformation(landmarks_dataset):
         show_landmarks(transformed_sample['image'], transformed_sample['landmarks'])
 
 
+def show_landmarks_batch(sample_batched):
+    """Show image with landmarks for a batch of samples."""
+    images_batch, landmarks_batch = \
+            sample_batched['image'], sample_batched['landmarks']
+    batch_size = len(images_batch)
+    im_size = images_batch.size(2)
+    grid_border_size = 2
+
+    grid = utils.make_grid(images_batch)
+    plt.imshow(grid.numpy().transpose((1, 2, 0)))
+
+    for i in range(batch_size):
+        plt.scatter(landmarks_batch[i, :, 0].numpy() + i * im_size + (i + 1) * grid_border_size,
+                    landmarks_batch[i, :, 1].numpy() + grid_border_size,
+                    s=10, marker='.', c='r')
+
+        plt.title('Batch from dataloader')
+
+
 if __name__ == '__main__':
+    '''Pandas landmark data frame
+    '''
     landmarks_frame = pd.read_csv('data/training_frames_keypoints.csv')
     print(landmarks_frame.describe())
     print(landmarks_frame.head())
 
     landmarks_dataset = LandmarksDataset(csv_file='data/training_frames_keypoints.csv',
                                          root_dir='data/training/')
-
     # demo_show_landmarks_dataframe(landmarks_frame, np.random.randint(0, landmarks_frame.shape[0]))
+    # plt.show()
+
+    '''PyTorch landmark data set
+    '''
     # demo_show_landmarks_dataset(landmarks_dataset, np.random.randint(0, len(landmarks_dataset)))
     # demo_show_transformation(landmarks_dataset)
     # plt.show()
 
-    data_transform = transforms.Compose([Rescale(250),
+    ''' PyTorch Dataset Transform to tensor
+    '''
+    data_transform = transforms.Compose([Rescale(256),
                                          RandomCrop(224),
-                                         Normalize(),
+                                         # Normalize(),
                                          ToTensor()])
     transformed_landmarks_dataset = LandmarksDataset(csv_file='data/training_frames_keypoints.csv',
                                                      root_dir='data/training/',
                                                      transform=data_transform)
-
-    # make sure the sample tensors are the expected size
-
     for i in range(5):
         sample = transformed_landmarks_dataset[i]
         # numpy image: H x W x C
         # torch image: C X H X W
-        print(i, sample['torch_image'].size(), sample['landmarks'].size())
+        print(i, sample['image'].size(), sample['landmarks'].size())
 
+    ''' PyTorch Dataset Batch
+    '''
+    data_loader = DataLoader(transformed_landmarks_dataset, batch_size=4,
+                             shuffle=True, num_workers=4)
+
+    for i_batch, sample_batched in enumerate(data_loader):
+        print(i_batch, sample_batched['image'].size(), sample_batched['landmarks'].size())
+
+        # observe 4th batch and stop.
+        if i_batch == 3:
+            plt.figure()
+            show_landmarks_batch(sample_batched)
+            plt.axis('off')
+            plt.ioff()
+            plt.show()
+            break
